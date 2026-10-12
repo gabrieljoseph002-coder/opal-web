@@ -79,7 +79,7 @@
       const d = w.daily[i];
       if (!d.isDaytime && i > 0) continue;
       const night = w.daily[i + 1] && !w.daily[i + 1].isDaytime ? w.daily[i + 1] : null;
-      days.push({ name: i === 0 && !d.isDaytime ? 'Tonight' : d.name.replace(/ Night$/, ''), hi: d.isDaytime ? d.temperature : null, lo: night ? night.temperature : (!d.isDaytime ? d.temperature : null), text: d.shortForecast, rain: (d.probabilityOfPrecipitation && d.probabilityOfPrecipitation.value) || 0, wind: d.windSpeed });
+      days.push({ name: i === 0 ? (d.isDaytime ? 'Today' : 'Tonight') : new Date(d.startTime).toLocaleDateString([], { weekday: 'short' }), hi: d.isDaytime ? d.temperature : null, lo: night ? night.temperature : (!d.isDaytime ? d.temperature : null), text: d.shortForecast, rain: (d.probabilityOfPrecipitation && d.probabilityOfPrecipitation.value) || 0, wind: d.windSpeed });
     }
     const sevClass = (s) => (/extreme|severe/i.test(s) ? 'bad' : /moderate/i.test(s) ? 'warn' : 'ok');
     const kindName = { hail: 'Hail', wind: 'Wind', torn: 'Tornado' };
@@ -91,7 +91,7 @@
       ${wc ? `<div class="wx-work ${wc.ok === true ? 'good' : wc.ok === false ? 'no' : 'maybe'}"><b>${wc.ok === true ? '✓ Roof day' : wc.ok === false ? '✕ No roof work' : '! Use caution'}</b><span>${esc(wc.text)}</span></div>` : ''}
       <div class="wx-hours">${w.hourly.slice(0, 12).map((h) => `<div class="wx-hour"><span>${new Date(h.startTime).toLocaleTimeString([], { hour: 'numeric' })}</span><i>${icon(h.shortForecast)}</i><b>${h.temperature}°</b><small>${(h.probabilityOfPrecipitation && h.probabilityOfPrecipitation.value) || 0}%</small></div>`).join('')}</div>
       <h3>7-day forecast</h3>
-      <div class="wx-days">${days.slice(0, 7).map((d) => `<div class="wx-day"><span>${esc(d.name.slice(0, 3))}</span><i>${icon(d.text)}</i><b>${d.hi ?? '–'}°<small> / ${d.lo ?? '–'}°</small></b><small>${esc(d.text)}</small><small>${d.rain ? '💧' + d.rain + '%' : ''}</small></div>`).join('')}</div>
+      <div class="wx-days">${days.slice(0, 7).map((d) => `<div class="wx-day"><span>${esc(d.name)}</span><i>${icon(d.text)}</i><b>${d.hi ?? '–'}°<small> / ${d.lo ?? '–'}°</small></b><small>${esc(d.text)}</small><small>${d.rain ? '💧' + d.rain + '%' : ''}</small></div>`).join('')}</div>
       <h3>NC weather alerts (${w.alerts.length})</h3>
       ${w.alerts.length ? w.alerts.slice(0, 12).map((a) => `<div class="alert ${sevClass(a.severity)}"><span><b>${esc(a.event)}</b> · ${esc((a.areaDesc || '').slice(0, 140))}<br><small>${esc(a.headline || '')}</small></span></div>`).join('') : '<p class="sub">No active watches or warnings in North Carolina.</p>'}
       <h3>Live radar (${esc(w.radar)})</h3>
