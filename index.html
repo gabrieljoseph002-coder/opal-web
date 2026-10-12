@@ -44,7 +44,7 @@ h2 { font: 600 11px "Open Sans"; letter-spacing: .16em; text-transform: uppercas
 .sig { color: var(--muted); font-size: 12px; white-space: nowrap; }
 .empty { color: var(--muted); padding: 18px; text-align: center; background: var(--panel); border-radius: 12px; margin-bottom: 8px; }
 textarea, input { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 10px; font: inherit; }
-nav { position: sticky; top: 0; z-index: 20; display: flex; background: #131313; border-bottom: 1px solid var(--line); }
+nav { position: sticky; top: 0; z-index: 20; display: flex; overflow-x: auto; scrollbar-width: none; background: #131313; border-bottom: 1px solid var(--line); } nav button { flex: 0 0 auto; }
 nav button { flex: 1 1 0; min-width: 0; background: none; border: 0; border-bottom: 3px solid transparent; color: var(--muted); font: 600 11px "Open Sans"; padding: 12px 0 10px; letter-spacing: .06em; text-transform: uppercase; }
 nav button.on { color: var(--red); border-bottom-color: var(--red); }
 /* House lookup + storms (shared look with the desktop app) */
@@ -94,6 +94,30 @@ nav button { font-size: 10px; letter-spacing: .03em; }
 .aicmd { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .aicmd span { color: var(--muted); font-size: 12px; width: 100%; }
 .aicmd code { flex: 1 1 200px; min-width: 0; overflow-x: auto; white-space: nowrap; background: #0a0a0a; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font: 12px Consolas, monospace; color: var(--mint); }
 .aiapps a { color: var(--red); }
+/* Solar tools */
+.sol-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.sol-tabs button { background: var(--panel); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 7px 14px; font: 600 13px "Open Sans", sans-serif; cursor: pointer; }
+.sol-tabs button.on { background: var(--red); border-color: var(--red); color: #fff; }
+.sol h3 { font: 600 11px "Open Sans", sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 18px 0 8px; }
+.sol-apps { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.sol-app { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; color: var(--text); cursor: pointer; font: inherit; display: flex; flex-direction: column; gap: 4px; }
+.sol-app:hover { border-color: var(--red); } .sol-app span { color: var(--muted); font-size: 12px; }
+.sol-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.sol-form label span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+.sol-form input { width: 100%; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font: inherit; user-select: text; }
+.sol .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 14px 0; }
+.sol .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.sol .kpi span { display: block; color: var(--muted); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; } .sol .kpi b { font-size: 18px; } .sol .kpi small { display: block; color: var(--muted); font-size: 12px; }
+.sol .alert { border-left: 4px solid var(--line); background: var(--panel); border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; font-size: 14px; }
+.sol .alert.ok { border-color: var(--mint); } .sol .alert.bad { border-color: var(--red); }
+.sol-node { border-left: 2px solid var(--red); background: var(--panel); border-radius: 0 10px 10px 0; padding: 6px 12px; margin-bottom: 6px; }
+.sol-node span { color: var(--muted); font-size: 13px; margin-left: 10px; }
+.sol-svg { width: 100%; max-width: 420px; display: block; }
+.sol-flow { stroke: var(--line); stroke-width: 4; } .sol-flow.on { stroke: var(--red); stroke-dasharray: 8 8; animation: solflow 1s linear infinite; }
+@keyframes solflow { to { stroke-dashoffset: -16; } }
+.sol-circ { fill: var(--panel); stroke: var(--line); stroke-width: 2; }
+.sol-t { fill: var(--muted); font: 600 11px "Open Sans", sans-serif; text-anchor: middle; } .sol-v { fill: var(--text); font: 600 14px "Open Sans", sans-serif; text-anchor: middle; }
+.sol table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; } .sol td, .sol th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
 </style>
 <script>
 // Show any script error on screen (so a phone screenshot tells us what broke).
@@ -103,7 +127,7 @@ window.addEventListener('unhandledrejection', function (e) { var r = e.reason; w
 </head>
 <body>
 <header><img src="assets/icon.png" alt=""><div class="brand">OPAL<small>Solutions command center</small></div></header>
-<nav><button class="on" data-tab="home">Home</button><button data-tab="house">House</button><button data-tab="nearby">Nearby</button><button data-tab="storms">Weather</button><button data-go="hub.html">Hub</button></nav>
+<nav><button class="on" data-tab="home">Home</button><button data-tab="house">House</button><button data-tab="nearby">Nearby</button><button data-tab="storms">Weather</button><button data-tab="solar">Solar</button><button data-go="hub.html">Hub</button></nav>
 
 <main>
   <section id="home" class="active">
@@ -134,6 +158,10 @@ window.addEventListener('unhandledrejection', function (e) { var r = e.reason; w
     <h2>Weather &amp; storms</h2>
     <div id="wxWrap"></div>
   </section>
+  <section id="solar">
+    <h2>Solar tools &amp; apps</h2>
+    <div id="solarWrap"></div>
+  </section>
   <section id="nearby">
     <div class="row"><h2>Wi-Fi nearby</h2><button class="btn" id="wifiBtn">Scan</button></div>
     <div id="wifiOut"><div class="empty">Finds solar gear setup hotspots: Tesla, Enphase, SolarEdge, SMA, Fronius and more.</div></div>
@@ -144,11 +172,13 @@ window.addEventListener('unhandledrejection', function (e) { var r = e.reason; w
     <div id="btOut"><div class="empty">Finds inverters, gateways, EV chargers, meters, earbuds and tags, with signal strength.</div></div>
   </section>
 </main>
-<script src="house.js?v=1.4.0"></script>
-<script src="weather.js?v=1.4.0"></script>
-<script src="aiapps.js?v=1.4.0"></script>
-<script src="version.js?v=1.4.0"></script>
-<script src="nearby.js?v=1.4.0"></script>
+<script src="house.js?v=1.5.0"></script>
+<script src="weather.js?v=1.5.0"></script>
+<script src="aiapps.js?v=1.5.0"></script>
+<script src="version.js?v=1.5.0"></script>
+<script src="nearby.js?v=1.5.0"></script>
+<script src="solar.js?v=1.5.0"></script>
+<script>window.OpalSolar.mount(document.getElementById('solarWrap'), {});</script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
 </body>
 </html>

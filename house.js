@@ -138,6 +138,7 @@
     result.watch = watchFor(p, result.roof, result.permits, result.flood);
     delete p.__county;
     save(result);
+    try { if (window.OpalLog) window.OpalLog.add('House lookup', addr); } catch {}
     return result;
   }
 
