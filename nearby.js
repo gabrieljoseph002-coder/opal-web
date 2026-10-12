@@ -52,7 +52,7 @@ function wifiRows(nets) {
 
 $('#wifiBtn').onclick = async () => {
   if (platform === 'ios') { $('#wifiOut').innerHTML = '<div class="empty">Apple doesn\'t allow any iPhone app to read the Wi-Fi list. Type the names from Settings > Wi-Fi below.</div>'; $('#manual').open = true; return; }
-  if (!P.WifiScan) { $('#wifiOut').innerHTML = '<div class="empty">iPhone and web apps can't read the Wi-Fi list (Apple rule). Type the names from Settings > Wi-Fi below.</div>'; $('#manual').open = true; return; }
+  if (!P.WifiScan) { $('#wifiOut').innerHTML = '<div class="empty">iPhone and web apps cannot read the Wi-Fi list (Apple rule). Type the names from Settings > Wi-Fi below.</div>'; $('#manual').open = true; return; }
   $('#wifiOut').innerHTML = '<div class="empty">Scanning Wi-Fi…</div>';
   try {
     const r = await P.WifiScan.scan();
@@ -76,7 +76,7 @@ function drawBt() {
 }
 $('#btBtn').onclick = async () => {
   const B = P.BluetoothLe;
-  if (!B) { $('#btOut').innerHTML = '<div class="empty">Bluetooth scanning isn't allowed in iPhone web apps (Apple rule). Use the Opal app on Android or a computer for Bluetooth.</div>'; return; }
+  if (!B) { $('#btOut').innerHTML = '<div class="empty">Bluetooth scanning is not allowed in iPhone web apps (Apple rule). Use the Opal app on Android or a computer for Bluetooth.</div>'; return; }
   if (scanning) { await B.stopLEScan(); scanning = false; $('#btBtn').textContent = 'Scan'; return; }
   try {
     await B.initialize({ androidNeverForLocation: true });
