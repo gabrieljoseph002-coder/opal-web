@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Opal">
+<title>Opal</title>
+<style>
+@font-face { font-family: "Bungee"; src: url("assets/fonts/Bungee-400.woff2") format("woff2"); }
+@font-face { font-family: "Open Sans"; font-weight: 400; src: url("assets/fonts/OpenSans-400.woff2") format("woff2"); }
+@font-face { font-family: "Open Sans"; font-weight: 600; src: url("assets/fonts/OpenSans-600.woff2") format("woff2"); }
+:root { --bg: #0e0e0e; --panel: #171717; --panel-2: #1f1f1f; --line: #2d2d2d; --text: #f4f4f4; --muted: #a9a9a9; --red: #d1432a; --red-dark: #a8331f; --mint: #b9ecc6; --mint-dim: rgba(185,236,198,.14); }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { overflow-x: hidden; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 "Open Sans", system-ui, sans-serif; padding: env(safe-area-inset-top) 0 calc(64px + env(safe-area-inset-bottom)); }
+header { display: flex; align-items: center; gap: 12px; padding: 16px; border-bottom: 1px solid var(--line); }
+header img { width: 40px; height: 40px; border-radius: 10px; }
+.brand { font-family: "Bungee", Impact, sans-serif; font-size: 24px; line-height: 1; }
+.brand small { display: block; font: 600 10px "Open Sans"; letter-spacing: .16em; color: var(--muted); text-transform: uppercase; margin-top: 5px; }
+main { padding: 16px; }
+section { display: none; } section.active { display: block; }
+h2 { font: 600 11px "Open Sans"; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 4px 0 10px; }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-bottom: 22px; }
+.tile { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; color: var(--text); font: inherit; min-height: 104px; display: flex; flex-direction: column; gap: 6px; }
+.tile:active { border-color: var(--red); background: var(--panel-2); }
+.tile.big { grid-column: span 2; border-color: #4a2219; background: linear-gradient(135deg, #1d1210, var(--panel) 60%); }
+.tile svg { width: 22px; height: 22px; stroke: var(--red); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tile b { font-weight: 600; } .tile span { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.btn { background: var(--red); color: #fff; border: 0; border-radius: 999px; padding: 10px 18px; font: 600 14px "Open Sans"; }
+.btn.ghost { background: var(--panel); border: 1px solid var(--line); }
+.row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+.row h2 { margin: 0; flex: 1; }
+.item { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; margin-bottom: 8px; }
+.tag { font: 600 10px "Open Sans"; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); background: var(--panel-2); padding: 3px 8px; border-radius: 999px; }
+.tag.solar { color: var(--mint); background: var(--mint-dim); }
+.item .name { flex: 1; min-width: 0; } .item .name b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .name span { color: var(--muted); font-size: 12px; }
+.sig { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.empty { color: var(--muted); padding: 18px; text-align: center; background: var(--panel); border-radius: 12px; margin-bottom: 8px; }
+textarea, input { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 10px; font: inherit; }
+nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: #131313; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+nav button { flex: 1 1 0; min-width: 0; background: none; border: 0; color: var(--muted); font: 600 11px "Open Sans"; padding: 10px 0 12px; letter-spacing: .06em; text-transform: uppercase; }
+nav button.on { color: var(--red); }
+/* House lookup + storms (shared look with the desktop app) */
+.house-head b { display: block; font-size: 17px; } .house-head span { color: var(--muted); font-size: 12px; }
+.kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 9px 11px; }
+.kpi span { display: block; color: var(--muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+.kpi b { font-size: 16px; } .kpi small { display: block; color: var(--muted); font-size: 11px; }
+#houseWrap h3 { font: 600 11px "Open Sans"; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 16px 0 8px; }
+.alert { border-left: 4px solid var(--line); background: var(--panel); border-radius: 8px; padding: 8px 11px; margin-bottom: 6px; font-size: 13px; }
+.alert.ok { border-color: var(--mint); } .alert.warn { border-color: #e8c46a; } .alert.bad { border-color: var(--red); }
+#houseWrap table { width: 100%; border-collapse: collapse; font-size: 12px; } #houseWrap td, #houseWrap th { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.pill { font-size: 9px; text-transform: uppercase; padding: 2px 6px; border-radius: 999px; background: var(--panel-2); color: var(--muted); } .pill.ok { color: var(--mint); background: var(--mint-dim); } .pill.warn { color: #e8c46a; }
+.links { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; } .links a { color: var(--red); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 13px; }
+.sub { color: var(--muted); font-size: 13px; } .note { color: var(--muted); font-size: 12px; }
+#houseWrap .row { flex-wrap: wrap; } #houseWrap input { flex: 1 1 100%; }
+nav button { font-size: 10px; letter-spacing: .03em; }
+</style>
+</head>
+<body>
+<header><img src="assets/icon.png" alt=""><div class="brand">OPAL<small>Solutions command center</small></div></header>
+<main>
+  <section id="home" class="active">
+    <h2>Work</h2>
+    <div class="grid">
+      <button class="tile big" data-go="hub.html"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg><b>Energy Hub</b><span>Tools, troubleshooting, calculators, and the live hub from the laptop</span></button>
+      <button class="tile" data-url="https://app.squareup.com/dashboard/items/library"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg><b>Square</b><span>Items, invoices</span></button>
+      <button class="tile" data-url="https://docs.google.com/document/d/1mo17Xlml-gKH3dqmFXjNQrqmSGQcu9UIy0K8oB3igJc/edit"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><b>Price Sheet</b><span>09 Price Sheet</span></button>
+      <button class="tile" data-url="https://drive.google.com/drive/my-drive"><svg viewBox="0 0 24 24"><path d="M7 4h10l5 9-5 8H7l-5-8z"/></svg><b>Google Drive</b><span>Company docs</span></button>
+      <button class="tile" data-url="https://opal-solutions.square.site/"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><b>Website</b><span>opal-solutions.square.site</span></button>
+    </div>
+    <h2>AI assistants</h2>
+    <div class="grid">
+      <button class="tile" data-url="https://claude.ai/new"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z"/></svg><b>Claude</b><span>Chat</span></button>
+      <button class="tile" data-url="https://chatgpt.com/"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg><b>ChatGPT</b><span>Second opinion</span></button>
+      <button class="tile" data-url="https://gemini.google.com/app"><svg viewBox="0 0 24 24"><path d="M12 2c0 5.5 4.5 10 10 10-5.5 0-10 4.5-10 10 0-5.5-4.5-10-10-10 5.5 0 10-4.5 10-10z"/></svg><b>Gemini</b><span>Google help</span></button>
+      <button class="tile" data-url="https://drive.google.com/drive/folders/1Pfi6CKuRYTDdaTMTLRVXlhW2qSnplplE"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><b>Job Jackets</b><span>Customer files</span></button>
+    </div>
+    <p class="note" style="text-align:center;margin-top:20px">Opal v1.1.0 · web app</p>
+  </section>
+  <section id="house">
+    <h2>House records (any NC address)</h2>
+    <div id="houseWrap"></div>
+  </section>
+  <section id="storms">
+    <div class="row"><h2>NC storm reports (today + yesterday)</h2><button class="btn" id="stormBtn">Refresh</button></div>
+    <div id="stormOut"><div class="empty">Hail, wind and tornado reports from NOAA. Hail 1"+ or wind 58 mph+ means likely roof and panel damage.</div></div>
+  </section>
+  <section id="nearby">
+    <div class="row"><h2>Wi-Fi nearby</h2><button class="btn" id="wifiBtn">Scan</button></div>
+    <div id="wifiOut"><div class="empty">Finds solar gear setup hotspots: Tesla, Enphase, SolarEdge, SMA, Fronius and more.</div></div>
+    <details class="item" style="display:block" id="manual"><summary style="color:var(--muted)">Type names from the Wi-Fi menu</summary>
+      <textarea id="ssidIn" rows="4" style="margin-top:8px" placeholder="TEG-0A1&#10;Envoy_123456"></textarea>
+      <button class="btn ghost" id="ssidBtn" style="margin-top:8px">Check names</button></details>
+    <div class="row" style="margin-top:22px"><h2>Bluetooth nearby</h2><button class="btn" id="btBtn">Scan</button></div>
+    <div id="btOut"><div class="empty">Finds inverters, gateways, EV chargers, meters, earbuds and tags, with signal strength.</div></div>
+  </section>
+</main>
+<nav><button class="on" data-tab="home">Home</button><button data-tab="house">House</button><button data-tab="nearby">Nearby</button><button data-tab="storms">Storms</button><button data-go="hub.html">Hub</button></nav>
+<script src="house.js"></script>
+<script src="nearby.js"></script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
+</body>
+</html>
