@@ -102,3 +102,8 @@ if (window.OpalHouse) window.OpalHouse.mount(document.querySelector('#houseWrap'
 const openUrl = (u) => { if (P.Browser) P.Browser.open({ url: u, toolbarColor: '#111111' }); else window.open(u, '_blank'); };
 const wx = window.OpalWeather.mount($('#wxWrap'), { open: openUrl, map: (lat, lon, label) => openUrl(`https://maps.apple.com/?ll=${lat},${lon}&q=${encodeURIComponent(label || 'Storm report')}`) });
 document.querySelector('nav [data-tab="storms"]').addEventListener('click', () => wx.load());
+
+// ---------- Get the AI apps ----------
+if (window.OpalAIApps) window.OpalAIApps.mount($('#aiAppsWrap'), { open: openUrl });
+
+if (window.OpalVersion) window.OpalVersion.footer(document.getElementById('verFoot'), 'Close Opal fully and reopen it.');
