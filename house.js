@@ -302,27 +302,63 @@
 
   // Mounts the lookup into a container. opts.open(url) opens links (app window / in-app browser).
   function mount(el, opts = {}) {
-    el.innerHTML = `<div class="row"><input id="houseAddr" list="houseSug" autocomplete="off" placeholder="Start typing an address…" style="flex:1 1 280px"><datalist id="houseSug"></datalist>
-      <button class="primary btn" id="houseGo">Look up</button><button class="btn ghost" id="houseClear">Clear</button></div><div id="houseOut"></div>`;
+    el.innerHTML = `<div class="row hs-search"><div class="hs-box"><input id="houseAddr" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search" placeholder="Start typing an address…"><div class="hs-sug" id="houseSug" role="listbox" hidden></div></div>
+      <button class="primary btn" id="houseGo">Look up</button><button class="btn ghost" id="houseHere" title="Look up the house you're standing at">📍 Here</button><button class="btn ghost" id="houseClear">Clear</button></div><div id="houseOut"></div>`;
     const out = el.querySelector('#houseOut'), input = el.querySelector('#houseAddr');
     const show = (r) => { out.innerHTML = html(r) + aiButtons('houseAI'); try { mountSolar(out.querySelector('#houseSolar'), r, opts.open); } catch (e) { console.error(e); } wireAI(out.querySelector('#houseAI'), () => houseBrief(r), opts.open); out.querySelectorAll('[data-ext]').forEach((a) => a.addEventListener('click', (e) => { if (opts.open) { e.preventDefault(); opts.open(a.href); } })); };
     const last = load();
     if (last) { input.value = last.address; show(last); }
+    const sug = el.querySelector('#houseSug');
+    const hide = () => { sug.hidden = true; sug.innerHTML = ''; };
     const go = async () => {
+      hide();
       if (!input.value.trim()) return;
       out.innerHTML = '<p class="sub">Looking up county records, permits and flood maps…</p>';
       try { show(await lookup(input.value)); } catch (e) { out.innerHTML = `<div class="alert warn"><span>${esc(e.message || e)}</span></div>`; }
     };
     el.querySelector('#houseGo').onclick = go;
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
-    let t = null;
-    const dl = el.querySelector('#houseSug');
+    input.addEventListener('keydown', (e) => {
+      const items = [...sug.querySelectorAll('button')], i = items.indexOf(document.activeElement);
+      if (e.key === 'Enter') { e.preventDefault(); go(); }
+      else if (e.key === 'ArrowDown' && items.length) { e.preventDefault(); items[0].focus(); }
+      else if (e.key === 'Escape') hide();
+    });
+    sug.addEventListener('keydown', (e) => {
+      const items = [...sug.querySelectorAll('button')], i = items.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown') { e.preventDefault(); (items[i + 1] || items[i]).focus(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); (i > 0 ? items[i - 1] : input).focus(); }
+      else if (e.key === 'Escape') { hide(); input.focus(); }
+    });
+    let t = null, seq = 0;
     input.addEventListener('input', () => {
       clearTimeout(t);
-      if (dl.querySelector(`option[value="${CSS.escape(input.value)}"]`)) { input.value = tidy(input.value); go(); return; }
-      t = setTimeout(async () => { try { dl.innerHTML = (await suggest(input.value)).map((x) => `<option value="${esc(x)}">`).join(''); } catch {} }, 250);
+      const q = input.value, my = ++seq;
+      if (q.trim().length < 4) return hide();
+      t = setTimeout(async () => {
+        let list = [];
+        try { list = await suggest(q); } catch {}
+        if (my !== seq) return; // a newer keystroke won
+        if (!list.length) return hide();
+        sug.innerHTML = list.map((x) => `<button type="button" role="option" data-v="${esc(x)}">${esc(x)}</button>`).join('');
+        sug.hidden = false;
+        sug.querySelectorAll('button').forEach((b) => b.onclick = () => { input.value = tidy(b.dataset.v); go(); });
+      }, 220);
     });
-    el.querySelector('#houseClear').onclick = () => { try { localStorage.removeItem(KEY); } catch {} input.value = ''; out.innerHTML = ''; };
+    document.addEventListener('click', (e) => { if (!el.querySelector('.hs-box').contains(e.target)) hide(); });
+    el.querySelector('#houseHere').onclick = () => {
+      if (!navigator.geolocation) { out.innerHTML = '<div class="alert warn"><span>Location isn’t available on this device. Type the address instead.</span></div>'; return; }
+      out.innerHTML = '<p class="sub">Finding where you are…</p>';
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        try {
+          const d = await getJSON(GEO + '/reverseGeocode', { location: `${pos.coords.longitude},${pos.coords.latitude}`, f: 'json', featureTypes: 'PointAddress,StreetAddress' });
+          const a = d.address || {};
+          if (!a.Address) throw new Error('No street address found here.');
+          input.value = `${a.Address}, ${a.City || ''}`.replace(/, $/, '');
+          go();
+        } catch (e) { out.innerHTML = `<div class="alert warn"><span>${esc(e.message || e)}</span></div>`; }
+      }, () => { out.innerHTML = '<div class="alert warn"><span>Location permission was blocked. Allow location for Opal, or type the address.</span></div>'; }, { enableHighAccuracy: true, timeout: 15000 });
+    };
+    el.querySelector('#houseClear').onclick = () => { try { localStorage.removeItem(KEY); } catch {} input.value = ''; out.innerHTML = ''; hide(); };
   }
 
   window.OpalHouse = { lookup, html, mount, last: load };

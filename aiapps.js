@@ -46,7 +46,7 @@
       ${APPS.map((a) => `<div class="aiapp"><div class="aiapp-head"><b>${a.name}</b><span>${a.by}</span></div>
         ${(a.items[dev] || []).map(([label, kind, val]) => kind === 'link'
           ? `<button class="btn ghost" data-aiopen="${esc(val)}">${esc(label)} ↗</button>`
-          : `<div class="aicmd"><span>${esc(label)}</span><code>${esc(val)}</code><button class="btn ghost" data-aicopy="${esc(val)}">Copy</button></div>`).join('')}
+          : `<div class="aicmd"><span>${esc(label)}</span><code>${esc(val)}</code><button class="btn ghost" data-aicopy="${esc(val)}">Copy</button>${window.opal && window.opal.installTool ? `<button class="btn" data-aiinstall="${esc(val)}">Install now</button>` : ''}</div>`).join('')}
       </div>`).join('')}
       ${needsNode ? `<p class="note">The CLI tools need Node.js first: <a href="#" data-aiopen="${NODE[2]}">nodejs.org</a>. Official links only; installers are never re-hosted by Opal.</p>` : '<p class="note">Official App Store / Google Play listings.</p>'}
     </div>`;
@@ -66,6 +66,7 @@
         catch { b.textContent = 'Select & copy'; }
         setTimeout(() => (b.textContent = 'Copy'), 2000);
       }));
+      el.querySelectorAll('[data-aiinstall]').forEach((b) => b.addEventListener('click', async () => { if (await window.opal.installTool(b.dataset.aiinstall)) b.textContent = 'Installing…'; }));
       const allLink = el.querySelector('[data-aidev="all"]');
       if (allLink) allLink.addEventListener('click', (e) => { e.preventDefault(); render(true); });
     };

@@ -102,6 +102,10 @@ nav button { font-size: 10px; letter-spacing: .03em; }
 .hs-form span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 3px; }
 .hs input, .hs select { width: 100%; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font: inherit; }
 .hs table { width: 100%; border-collapse: collapse; font-size: 13px; } .hs td, .hs th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.hs-box { position: relative; flex: 1 1 280px; min-width: 0; } .hs-box input { width: 100%; }
+.hs-sug { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 30; background: #1b1b1b; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,.5); }
+.hs-sug button { display: block; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); color: var(--text); padding: 12px 16px; font: inherit; cursor: pointer; }
+.hs-sug button:last-child { border-bottom: 0; } .hs-sug button:hover, .hs-sug button:focus { background: var(--panel-2); outline: none; color: #fff; }
 /* Solar tools */
 .sol-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
 .sol-tabs button { background: var(--panel); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 7px 14px; font: 600 13px "Open Sans", sans-serif; cursor: pointer; }
@@ -146,6 +150,7 @@ window.addEventListener('unhandledrejection', function (e) { var r = e.reason; w
       <button class="tile" data-url="https://docs.google.com/document/d/1mo17Xlml-gKH3dqmFXjNQrqmSGQcu9UIy0K8oB3igJc/edit"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><b>Price Sheet</b><span>09 Price Sheet</span></button>
       <button class="tile" data-url="https://drive.google.com/drive/my-drive"><svg viewBox="0 0 24 24"><path d="M7 4h10l5 9-5 8H7l-5-8z"/></svg><b>Google Drive</b><span>Company docs</span></button>
       <button class="tile" data-url="https://opal-solutions.square.site/"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><b>Website</b><span>opal-solutions.square.site</span></button>
+      <button class="tile" id="driveFilesBtn"><svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg><b>Drive files</b><span>Open files from the OPAL drive or phone</span></button>
     </div>
     <h2>AI assistants</h2>
     <div class="grid">
@@ -188,5 +193,38 @@ window.addEventListener('unhandledrejection', function (e) { var r = e.reason; w
 <script src="solar.js?v=1.5.0"></script>
 <script>window.OpalSolar.mount(document.getElementById('solarWrap'), {});</script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
+<input type="file" id="driveFilesIn" multiple hidden>
+<div id="fileView" hidden style="position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.92);display:flex;flex-direction:column">
+  <div class="row" style="padding:12px"><b id="fileName" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></b><a class="btn ghost" id="fileSave" download>Save / Share</a><button class="btn" id="fileClose">Close</button></div>
+  <div id="fileBody" style="flex:1;overflow:auto;padding:0 12px 12px"></div>
+</div>
+<script>
+(function () {
+  var inp = document.getElementById('driveFilesIn'), view = document.getElementById('fileView'), body = document.getElementById('fileBody'), url = null;
+  document.getElementById('driveFilesBtn').onclick = function () { inp.click(); };
+  document.getElementById('fileClose').onclick = function () { view.hidden = true; body.innerHTML = ''; if (url) URL.revokeObjectURL(url); };
+  function show(f) {
+    if (url) URL.revokeObjectURL(url);
+    url = URL.createObjectURL(f);
+    document.getElementById('fileName').textContent = f.name;
+    var a = document.getElementById('fileSave'); a.href = url; a.download = f.name;
+    body.innerHTML = '';
+    if (/^image\//.test(f.type)) { var i = new Image(); i.src = url; i.style.cssText = 'max-width:100%;border-radius:12px'; body.appendChild(i); }
+    else if (/pdf|^video\/|^audio\/|html/.test(f.type)) { var fr = document.createElement('iframe'); fr.src = url; fr.style.cssText = 'width:100%;height:100%;border:0;background:#fff;border-radius:12px'; body.appendChild(fr); }
+    else if (/^text\/|json|csv|xml|javascript/.test(f.type) || /\.(txt|md|csv|json|log|sh|cmd|ps1|py)$/i.test(f.name)) { f.text().then(function (t) { var p = document.createElement('pre'); p.textContent = t.slice(0, 200000); p.style.cssText = 'white-space:pre-wrap;color:#eee;font:12px/1.45 monospace'; body.appendChild(p); }); }
+    else body.innerHTML = '<div class="empty">This kind of file can’t be previewed here. Tap Save / Share to open it in another app.</div>';
+    view.hidden = false;
+  }
+  inp.onchange = function () {
+    var fs = Array.prototype.slice.call(inp.files || []);
+    if (fs.length === 1) return show(fs[0]);
+    if (!fs.length) return;
+    body.innerHTML = '';
+    document.getElementById('fileName').textContent = fs.length + ' files';
+    fs.forEach(function (f) { var b = document.createElement('button'); b.className = 'btn ghost'; b.style.cssText = 'display:block;width:100%;text-align:left;margin-bottom:8px'; b.textContent = f.name + '  (' + Math.round(f.size / 1024) + ' KB)'; b.onclick = function () { show(f); }; body.appendChild(b); });
+    view.hidden = false;
+  };
+})();
+</script>
 </body>
 </html>
