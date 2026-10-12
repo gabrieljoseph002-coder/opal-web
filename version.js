@@ -1,7 +1,7 @@
 // Version footer + "newer version available" check, shared by every Opal copy.
 // The live web app publishes version.json; every other copy compares itself against it.
 (function () {
-  const ME = { version: '1.5.0', date: '2026-10-12' };
+  const ME = { version: '1.6.0', date: '2026-10-12' };
   const LIVE = 'https://gabrieljoseph002-coder.github.io/opal-web/version.json';
   const newer = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
   function footer(el, how) {
