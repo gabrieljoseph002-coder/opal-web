@@ -63,11 +63,41 @@ nav button.on { color: var(--red); border-bottom-color: var(--red); }
 #houseWrap .row { flex-wrap: wrap; } #houseWrap input { flex: 1 1 100%; }
 nav button { font-size: 10px; letter-spacing: .03em; }
 .ai-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 12px 0; } .ai-row .btn { padding: 8px 14px; }
+/* Weather */
+.wx h3 { font: 600 11px "Open Sans", sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 20px 0 10px; }
+.wx-now { display: flex; align-items: center; gap: 18px; background: linear-gradient(135deg, #1d1210, var(--panel) 65%); border: 1px solid #4a2219; border-radius: 18px; padding: 18px 20px; }
+.wx-big { display: flex; align-items: center; gap: 10px; font-size: 40px; } .wx-big b { font: 400 44px "Bungee", Impact, sans-serif; line-height: 1; }
+.wx-now-txt b { display: block; font-size: 18px; } .wx-now-txt span { color: var(--muted); font-size: 13px; }
+.wx-work { margin-top: 10px; border-radius: 14px; padding: 12px 16px; border: 1px solid var(--line); background: var(--panel); }
+.wx-work b { display: block; font-size: 15px; } .wx-work span { color: var(--muted); font-size: 13px; }
+.wx-work.good { border-color: rgba(185,236,198,.5); } .wx-work.good b { color: var(--mint); }
+.wx-work.no { border-color: var(--red); } .wx-work.no b { color: var(--red); }
+.wx-work.maybe { border-color: #e8c46a; } .wx-work.maybe b { color: #e8c46a; }
+.wx-hours, .wx-days { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
+.wx-hour, .wx-day { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; min-width: 62px; }
+.wx-hours { margin-top: 12px; }
+.wx-day { min-width: 108px; max-width: 120px; text-align: center; }
+.wx-hour span, .wx-day span { color: var(--muted); font-size: 12px; font-weight: 600; } .wx-hour i, .wx-day i { font-style: normal; font-size: 22px; }
+.wx-hour b, .wx-day b { font-size: 16px; } .wx-hour small, .wx-day small { color: var(--muted); font-size: 11px; line-height: 1.3; }
+.wx-radar { width: 100%; max-width: 620px; border-radius: 14px; border: 1px solid var(--line); display: block; }
+.wx-rep { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+.wx-rep > div { flex: 1; min-width: 0; } .wx-rep b { display: block; } .wx-rep small { color: var(--muted); font-size: 12px; }
+.wx-rep .tag { font: 600 10px "Open Sans", sans-serif; letter-spacing: .1em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; background: var(--panel-2); color: var(--muted); }
+.wx-rep .tag.hot { color: var(--mint); background: rgba(185,236,198,.14); }
+.wx .alert { border-left: 4px solid var(--line); background: var(--panel); border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; font-size: 13px; }
+.wx .alert.ok { border-color: var(--mint); } .wx .alert.warn { border-color: #e8c46a; } .wx .alert.bad { border-color: var(--red); }
+.wx .alert small { color: var(--muted); }
 </style>
+<script>
+// Show any script error on screen (so a phone screenshot tells us what broke).
+window.addEventListener('error', function (e) { var b = document.getElementById('errbar') || document.body.appendChild(Object.assign(document.createElement('div'), { id: 'errbar' })); b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99;background:#a8331f;color:#fff;font:12px/1.4 monospace;padding:8px 10px;white-space:pre-wrap'; b.textContent += 'Error: ' + (e.message || e) + ' @ ' + (e.filename || '').split('/').pop() + ':' + (e.lineno || '') + '
+'; });
+window.addEventListener('unhandledrejection', function (e) { var r = e.reason; window.dispatchEvent(new ErrorEvent('error', { message: 'promise: ' + ((r && r.message) || r) })); });
+</script>
 </head>
 <body>
 <header><img src="assets/icon.png" alt=""><div class="brand">OPAL<small>Solutions command center</small></div></header>
-<nav><button class="on" data-tab="home">Home</button><button data-tab="house">House</button><button data-tab="nearby">Nearby</button><button data-tab="storms">Storms</button><button data-go="hub.html">Hub</button></nav>
+<nav><button class="on" data-tab="home">Home</button><button data-tab="house">House</button><button data-tab="nearby">Nearby</button><button data-tab="storms">Weather</button><button data-go="hub.html">Hub</button></nav>
 
 <main>
   <section id="home" class="active">
@@ -86,15 +116,15 @@ nav button { font-size: 10px; letter-spacing: .03em; }
       <button class="tile" data-url="https://gemini.google.com/app"><svg viewBox="0 0 24 24"><path d="M12 2c0 5.5 4.5 10 10 10-5.5 0-10 4.5-10 10 0-5.5-4.5-10-10-10 5.5 0 10-4.5 10-10z"/></svg><b>Gemini</b><span>Google help</span></button>
       <button class="tile" data-url="https://drive.google.com/drive/folders/1Pfi6CKuRYTDdaTMTLRVXlhW2qSnplplE"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><b>Job Jackets</b><span>Customer files</span></button>
     </div>
-    <p class="note" style="text-align:center;margin-top:20px">Opal v1.2.0 · web app</p>
+    <p class="note" style="text-align:center;margin-top:20px">Opal v1.3.0 · web app</p>
   </section>
   <section id="house">
     <h2>House records (any NC address)</h2>
     <div id="houseWrap"></div>
   </section>
   <section id="storms">
-    <div class="row"><h2>NC storm reports (today + yesterday)</h2><button class="btn" id="stormBtn">Refresh</button></div>
-    <div id="stormOut"><div class="empty">Hail, wind and tornado reports from NOAA. Hail 1"+ or wind 58 mph+ means likely roof and panel damage.</div></div>
+    <h2>Weather &amp; storms</h2>
+    <div id="wxWrap"></div>
   </section>
   <section id="nearby">
     <div class="row"><h2>Wi-Fi nearby</h2><button class="btn" id="wifiBtn">Scan</button></div>
@@ -106,8 +136,9 @@ nav button { font-size: 10px; letter-spacing: .03em; }
     <div id="btOut"><div class="empty">Finds inverters, gateways, EV chargers, meters, earbuds and tags, with signal strength.</div></div>
   </section>
 </main>
-<script src="house.js"></script>
-<script src="nearby.js"></script>
+<script src="house.js?v=1.3.0"></script>
+<script src="weather.js?v=1.3.0"></script>
+<script src="nearby.js?v=1.3.0"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
 </body>
 </html>

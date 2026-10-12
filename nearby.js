@@ -98,30 +98,7 @@ if (window.OpalHouse) window.OpalHouse.mount(document.querySelector('#houseWrap'
   open: (u) => { if (P.Browser) P.Browser.open({ url: u, toolbarColor: '#111111' }); else window.open(u, '_blank'); },
 });
 
-// ---------- Storms (NOAA Storm Prediction Center) ----------
-const KIND = { hail: 'Hail', wind: 'Wind', torn: 'Tornado' };
-async function loadStorms() {
-  $('#stormOut').innerHTML = '<div class="empty">Loading NOAA reports…</div>';
-  const list = [];
-  for (const day of ['today', 'yesterday']) for (const kind of ['hail', 'wind', 'torn']) {
-    try {
-      const csv = await (await fetch(`https://www.spc.noaa.gov/climo/reports/${day}_filtered_${kind}.csv`)).text();
-      for (const line of csv.split(/\r?\n/)) {
-        const f = line.split(',');
-        if (f.length < 7 || f[0] === 'Time' || f[4] !== 'NC') continue;
-        list.push({ day, kind, time: f[0], size: f[1], location: f[2], county: f[3], lat: f[5], lon: f[6], comments: f.slice(7).join(',') });
-      }
-    } catch {}
-  }
-  if (!list.length) { $('#stormOut').innerHTML = '<div class="empty">No NC hail, wind or tornado reports today or yesterday.</div>'; return; }
-  const sev = (r) => r.kind === 'torn' ? 3 : r.kind === 'hail' ? (+r.size >= 100 ? 2 : 1) : (+r.size >= 58 || r.size === 'UNK' ? 1 : 0);
-  list.sort((a, b) => sev(b) - sev(a));
-  $('#stormOut').innerHTML = list.map((r, i) => `<div class="item"><span class="tag ${sev(r) ? 'solar' : ''}">${KIND[r.kind]}</span>
-    <div class="name"><b>${esc(r.location)}, ${esc(r.county)}</b><span>${r.day} ${esc(r.time)}Z · ${r.kind === 'hail' ? (+r.size / 100).toFixed(2) + '" hail' : r.kind === 'wind' ? (r.size === 'UNK' ? 'wind damage' : esc(r.size) + ' mph') : 'tornado'} · ${esc(r.comments.slice(0, 90))}</span></div>
-    <button class="btn ghost" data-map="${i}">Map</button></div>`).join('');
-  $('#stormOut').querySelectorAll('[data-map]').forEach((b) => b.onclick = () => { const r = list[b.dataset.map]; const u = `https://maps.apple.com/?ll=${r.lat},${r.lon}&q=${encodeURIComponent(r.location)}`; if (P.Browser) P.Browser.open({ url: u }); else window.open(u); });
-  if (window.OpalAI) { $('#stormOut').insertAdjacentHTML('afterbegin', window.OpalAI.buttons('stormAI')); window.OpalAI.wire($('#stormAI'), () => stormBrief(list), (u) => { if (P.Browser) P.Browser.open({ url: u }); else window.open(u, '_blank'); }); }
-}
-const stormBrief = (list) => ['I run Opal Solutions (solar, battery, electrical service) in Raleigh-Durham NC. Core counties: Wake, Durham, Orange, Chatham, Johnston, Granville, Franklin.', 'From these NOAA storm reports, which areas should we target for roof/solar damage checks, inspections and removal & reinstall jobs? Rank them, say why, and suggest a short door-knock or outreach plan (no robocalls or texting without consent).', '', ...list.map((r) => `- ${r.day} ${r.time}Z ${r.kind === 'torn' ? 'TORNADO' : r.kind} ${r.size || ''} at ${r.location}, ${r.county} County: ${String(r.comments || '').slice(0, 120)}`)].join(String.fromCharCode(10));
-$('#stormBtn').onclick = loadStorms;
-document.querySelector('nav [data-tab="storms"]').addEventListener('click', () => { if (!$('#stormOut .item')) loadStorms(); });
+// ---------- Weather (shared module) ----------
+const openUrl = (u) => { if (P.Browser) P.Browser.open({ url: u, toolbarColor: '#111111' }); else window.open(u, '_blank'); };
+const wx = window.OpalWeather.mount($('#wxWrap'), { open: openUrl, map: (lat, lon, label) => openUrl(`https://maps.apple.com/?ll=${lat},${lon}&q=${encodeURIComponent(label || 'Storm report')}`) });
+document.querySelector('nav [data-tab="storms"]').addEventListener('click', () => wx.load());
