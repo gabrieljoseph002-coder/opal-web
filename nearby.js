@@ -120,6 +120,8 @@ async function loadStorms() {
     <div class="name"><b>${esc(r.location)}, ${esc(r.county)}</b><span>${r.day} ${esc(r.time)}Z · ${r.kind === 'hail' ? (+r.size / 100).toFixed(2) + '" hail' : r.kind === 'wind' ? (r.size === 'UNK' ? 'wind damage' : esc(r.size) + ' mph') : 'tornado'} · ${esc(r.comments.slice(0, 90))}</span></div>
     <button class="btn ghost" data-map="${i}">Map</button></div>`).join('');
   $('#stormOut').querySelectorAll('[data-map]').forEach((b) => b.onclick = () => { const r = list[b.dataset.map]; const u = `https://maps.apple.com/?ll=${r.lat},${r.lon}&q=${encodeURIComponent(r.location)}`; if (P.Browser) P.Browser.open({ url: u }); else window.open(u); });
+  if (window.OpalAI) { $('#stormOut').insertAdjacentHTML('afterbegin', window.OpalAI.buttons('stormAI')); window.OpalAI.wire($('#stormAI'), () => stormBrief(list), (u) => { if (P.Browser) P.Browser.open({ url: u }); else window.open(u, '_blank'); }); }
 }
+const stormBrief = (list) => ['I run Opal Solutions (solar, battery, electrical service) in Raleigh-Durham NC. Core counties: Wake, Durham, Orange, Chatham, Johnston, Granville, Franklin.', 'From these NOAA storm reports, which areas should we target for roof/solar damage checks, inspections and removal & reinstall jobs? Rank them, say why, and suggest a short door-knock or outreach plan (no robocalls or texting without consent).', '', ...list.map((r) => `- ${r.day} ${r.time}Z ${r.kind === 'torn' ? 'TORNADO' : r.kind} ${r.size || ''} at ${r.location}, ${r.county} County: ${String(r.comments || '').slice(0, 120)}`)].join(String.fromCharCode(10));
 $('#stormBtn').onclick = loadStorms;
 document.querySelector('nav [data-tab="storms"]').addEventListener('click', () => { if (!$('#stormOut .item')) loadStorms(); });

@@ -191,12 +191,55 @@
     return parts.length >= 2 ? parts[0] + ', ' + parts[1] : t;
   }
 
+
+  // ---------- Ask AI (Claude / ChatGPT / Gemini) with the data on screen ----------
+  const AI_URL = {
+    claude: (q) => 'https://claude.ai/new?q=' + encodeURIComponent(q),
+    chatgpt: (q) => 'https://chatgpt.com/?q=' + encodeURIComponent(q),
+    gemini: () => 'https://gemini.google.com/app',
+  };
+  async function askAI(target, text, open) {
+    const q = text.length > 6000 ? text.slice(0, 6000) + ' [trimmed]' : text;
+    if (target === 'gemini') { try { await navigator.clipboard.writeText(q); } catch {} }
+    const url = AI_URL[target](q);
+    if (open) open(url); else window.open(url, '_blank');
+    return target === 'gemini' ? 'Question copied. Paste it into Gemini (long-press > Paste).' : '';
+  }
+  function aiButtons(id) {
+    return `<div class="ai-row" id="${id}"><span class="sub">Ask AI about this:</span>
+      <button class="btn ghost" data-ai="claude">Claude</button><button class="btn ghost" data-ai="chatgpt">ChatGPT</button><button class="btn ghost" data-ai="gemini">Gemini</button><span class="sub ai-msg"></span></div>`;
+  }
+  function wireAI(el, getText, open) {
+    el.querySelectorAll('[data-ai]').forEach((b) => b.addEventListener('click', async () => {
+      const msg = await askAI(b.dataset.ai, getText(), open);
+      const m = el.querySelector('.ai-msg'); if (m) m.textContent = msg;
+    }));
+  }
+  function houseBrief(r) {
+    const p = r.p;
+    const lines = [
+      'I run Opal Solutions, a solar, battery and electrical service company in the Raleigh-Durham, NC area.',
+      'Using the public records below, tell me: 1) the biggest risks for solar, battery or electrical work at this house, 2) what to inspect on site, 3) which of our services fit (solar install, removal & reinstall, battery, panel upgrade, EV charger, cleaning, critter guard), and 4) anything that should change the quote. Be specific and brief.',
+      '',
+      `Address: ${p.siteadd}, ${p.scity}, NC (${p.cntyname} County)`,
+      `Year built: ${p.structyear || 'unknown'}; lot ${p.gisacres ? (+p.gisacres).toFixed(2) + ' ac' : '?'}; use: ${p.parusedsc2 || p.parusedesc || '?'}; structures: ${p.structno || '?'}`,
+      `County value $${num(p.parval)} (house $${num(p.improvval)}); last sold ${String(p.saledatetx || '?').slice(0, 10)}`,
+      `Roof age: ${r.roof ? r.roof.age + ' yrs (' + r.roof.basis + ')' : 'unknown'}`,
+      `Flood zone: ${r.flood ? r.flood.zone + (r.flood.special ? ' (special flood hazard area)' : '') : 'unknown'}`,
+    ];
+    if (r.county) lines.push(`Heated area ${num(r.county.heated)} sq ft; zoning ${r.county.zoning || '?'}; sale price $${num(r.county.salePrice)}`);
+    if (r.permits && r.permits.length) { lines.push('Permits:'); r.permits.slice(0, 15).forEach((x) => lines.push(`- ${x.date} ${x.type}${x.tag ? ' [' + x.tag + ']' : ''}: ${x.work.slice(0, 100)}${x.by ? ' (' + x.by + ')' : ''}`)); }
+    else lines.push('Permits: ' + (r.permitNote || 'none on file'));
+    if (r.watch && r.watch.length) { lines.push('Flags already noted:'); r.watch.forEach(([, t]) => lines.push('- ' + t)); }
+    return lines.join(String.fromCharCode(10));
+  }
+
   // Mounts the lookup into a container. opts.open(url) opens links (app window / in-app browser).
   function mount(el, opts = {}) {
     el.innerHTML = `<div class="row"><input id="houseAddr" list="houseSug" autocomplete="off" placeholder="Start typing an address…" style="flex:1 1 280px"><datalist id="houseSug"></datalist>
       <button class="primary btn" id="houseGo">Look up</button><button class="btn ghost" id="houseClear">Clear</button></div><div id="houseOut"></div>`;
     const out = el.querySelector('#houseOut'), input = el.querySelector('#houseAddr');
-    const show = (r) => { out.innerHTML = html(r); out.querySelectorAll('[data-ext]').forEach((a) => a.addEventListener('click', (e) => { if (opts.open) { e.preventDefault(); opts.open(a.href); } })); };
+    const show = (r) => { out.innerHTML = html(r) + aiButtons('houseAI'); wireAI(out.querySelector('#houseAI'), () => houseBrief(r), opts.open); out.querySelectorAll('[data-ext]').forEach((a) => a.addEventListener('click', (e) => { if (opts.open) { e.preventDefault(); opts.open(a.href); } })); };
     const last = load();
     if (last) { input.value = last.address; show(last); }
     const go = async () => {
@@ -217,4 +260,5 @@
   }
 
   window.OpalHouse = { lookup, html, mount, last: load };
+  window.OpalAI = { ask: askAI, buttons: aiButtons, wire: wireAI };
 })();
