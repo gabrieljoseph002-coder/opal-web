@@ -94,6 +94,14 @@ nav button { font-size: 10px; letter-spacing: .03em; }
 .aicmd { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .aicmd span { color: var(--muted); font-size: 12px; width: 100%; }
 .aicmd code { flex: 1 1 200px; min-width: 0; overflow-x: auto; white-space: nowrap; background: #0a0a0a; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font: 12px Consolas, monospace; color: var(--mint); }
 .aiapps a { color: var(--red); }
+/* House: roof photo + solar estimate */
+.roofpic { display: block; position: relative; margin: 12px 0; max-width: 640px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+.roofpic img { display: block; width: 100%; height: auto; background: var(--panel); min-height: 120px; }
+.roofpic span { position: absolute; left: 8px; bottom: 8px; background: rgba(0,0,0,.65); color: #fff; font-size: 12px; padding: 3px 9px; border-radius: 999px; }
+.hs-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 10px; }
+.hs-form span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 3px; }
+.hs input, .hs select { width: 100%; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font: inherit; }
+.hs table { width: 100%; border-collapse: collapse; font-size: 13px; } .hs td, .hs th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
 /* Solar tools */
 .sol-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
 .sol-tabs button { background: var(--panel); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 7px 14px; font: 600 13px "Open Sans", sans-serif; cursor: pointer; }

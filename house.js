@@ -145,6 +145,7 @@
   function linksFor(p) {
     const q = encodeURIComponent(`${p.siteadd}, ${p.scity}, NC`);
     const L = [['Google Maps', `https://www.google.com/maps/search/?api=1&query=${q}`]];
+    if (p.lat) L.push(['Google Sunroof (solar potential)', `https://sunroof.withgoogle.com/building/${p.lat}/${p.lon}/#?f=buy`]);
     if (p.lat) L.push(['Street View', `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${p.lat},${p.lon}`]);
     const c = (p.cntyname || '').toUpperCase();
     if (c === 'WAKE') L.push(['Wake real estate record', `https://services.wake.gov/realestate/Account.asp?id=&stype=addr&stnum=&stname=${encodeURIComponent(p.siteadd || '')}`], ['Raleigh permit portal', 'https://permitportal.raleighnc.gov'], ['Wake permits', 'https://www.wake.gov/departments-government/permits-inspections']);
@@ -160,6 +161,7 @@
     const tag = (t) => (t ? `<span class="pill ${t === 'solar' ? 'ok' : t === 'roof' ? 'warn' : ''}">${esc(t)}</span>` : '');
     return `<div class="house">
       <div class="house-head"><b>${esc(p.siteadd)}, ${esc(p.scity)} ${esc(p.szip || '')}</b><span>${esc(p.cntyname)} County · parcel ${esc(p.parno)} · looked up ${esc(r.when.slice(0, 16).replace('T', ' '))}</span></div>
+      ${p.lat ? `<a class="roofpic" data-ext="1" href="https://www.google.com/maps/@?api=1&map_action=map&center=${p.lat},${p.lon}&zoom=20&basemap=satellite" target="_blank" rel="noopener"><img alt="Aerial view of the roof" loading="lazy" src="https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${p.lon - 0.00045},${p.lat - 0.00028},${p.lon + 0.00045},${p.lat + 0.00028}&bboxSR=4326&imageSR=3857&size=640,400&format=jpg&f=image"><span>Roof from above · tap for Google satellite</span></a>` : ''}
       <div class="kpis">
         <div class="kpi"><span>Built</span><b>${y || '-'}</b><small>${age ? age + ' yrs old' : (y ? '' : 'not published by county')}</small></div>
         <div class="kpi"><span>Roof age</span><b>${r.roof ? (r.roof.sure ? '' : '~') + r.roof.age + ' yrs' + (r.roof.sure ? '' : '?') : '-'}</b><small>${r.roof ? esc(r.roof.basis) : 'no data'}</small></div>
@@ -168,6 +170,7 @@
         <div class="kpi"><span>Lot</span><b>${p.gisacres != null ? (+p.gisacres).toFixed(2) + ' ac' : '-'}</b><small>${esc(p.parusedsc2 || p.parusedesc || '')}</small></div>
         <div class="kpi"><span>Flood zone</span><b>${r.flood ? esc(r.flood.zone) : '-'}</b><small>${r.flood && r.flood.special ? 'special flood hazard area' : 'FEMA'}</small></div>
       </div>
+      <h3>Solar estimate</h3><div class="hs" id="houseSolar"></div>
       ${r.county ? `<div class="kpis">
         <div class="kpi"><span>Heated area</span><b>${num(r.county.heated)} ft²</b></div>
         <div class="kpi"><span>Zoning</span><b>${esc(r.county.zoning || '-')}</b></div>
@@ -216,6 +219,68 @@
       const m = el.querySelector('.ai-msg'); if (m) m.textContent = msg;
     }));
   }
+  // ---------- Quick solar sizing (planning estimate, NC numbers) ----------
+  // Raleigh-area PVWatts yield: ~1,380 kWh per kW DC per year, south 25° tilt, 14% losses.
+  const FACE = { 'South': 1.0, 'South-east / South-west': 0.95, 'East / West': 0.82, 'Mixed (S + E/W)': 0.9 };
+  function solarInputs(r) {
+    const heated = r.county && +r.county.heated ? +r.county.heated : 2000;
+    const attached = /TWNH|TOWN|CONDO|DUPLEX|ATTACH/i.test((r.p.parusedsc2 || '') + ' ' + (r.p.parusedesc || ''));
+    const stories = r.permits && r.permits.find((x) => +x.stories) ? +r.permits.find((x) => +x.stories).stories : (attached || heated > 2400 ? 2 : 1);
+    return { heated, stories, lotFt: r.p.gisacres ? +r.p.gisacres * 43560 : 0, use: 1100, watts: 430, usable: 45, face: 'Mixed (S + E/W)' };
+  }
+  function solarCalc(v) {
+    // A house can't cover more than ~60% of its lot (keeps townhomes and small lots realistic).
+    const footprint = Math.min(v.heated / Math.max(1, v.stories), v.lotFt ? v.lotFt * 0.6 : Infinity);
+    const roof = footprint * 1.15 * 1.1; // pitch + overhangs
+    const maxPanels = Math.floor((roof * v.usable / 100) / 21);
+    const yieldKw = 1380 * (FACE[v.face] || 0.9);
+    const yearUse = v.use * 12;
+    const opt = (n) => { const kw = n * v.watts / 1000; const kwh = Math.round(kw * yieldKw); return { n, kw, kwh, off: Math.round(kwh / yearUse * 100) }; };
+    const forOffset = (f) => Math.min(maxPanels, Math.ceil((yearUse * f) / yieldKw * 1000 / v.watts));
+    const rows = [['50% offset', forOffset(0.5)], ['75% offset', forOffset(0.75)], ['100% offset', forOffset(1)], ['Max that fits', maxPanels]]
+      .filter((x, i, a) => x[1] > 0 && a.findIndex((y) => y[1] === x[1]) === i).map(([label, n]) => ({ label, ...opt(n) }));
+    return { footprint, roof, maxPanels, yieldKw, yearUse, rows };
+  }
+  function solarHtml(v, c) {
+    return `<table><tr><th>Option</th><th>Panels</th><th>System</th><th>Makes / yr</th><th>Covers</th></tr>${c.rows.map((x) => `<tr><td>${esc(x.label)}</td><td>${x.n} × ${v.watts} W</td><td>${x.kw.toFixed(2)} kW</td><td>${num(x.kwh)} kWh</td><td>${x.off}%</td></tr>`).join('')}</table>
+      <p class="note">Roof ≈ ${num(Math.round(c.roof))} ft² (footprint ${num(Math.round(c.footprint))} ft²), ${v.usable}% usable after fire-code setbacks and bad faces → up to ${c.maxPanels} panels. ${Math.round(c.yieldKw)} kWh per kW per year (${esc(v.face)}). Planning estimate: confirm in OpenSolar with real roof planes and shade.</p>`;
+  }
+  function proposalText(r, v, c) {
+    const p = r.p;
+    const L = ['OPAL SOLUTIONS - SITE DATA FOR DESIGN', '',
+      `Address: ${p.siteadd}, ${p.scity}, NC ${p.szip || ''}`, `County: ${p.cntyname} | Parcel: ${p.parno}`,
+      `Coordinates: ${p.lat ? p.lat.toFixed(6) + ', ' + p.lon.toFixed(6) : 'n/a'}`,
+      `Year built: ${p.structyear || 'unknown'} | Stories (est.): ${v.stories} | Heated area: ${num(v.heated)} sq ft`,
+      `Roof age: ${r.roof ? r.roof.age + ' yrs (' + r.roof.basis + ')' : 'unknown'}`,
+      `Flood zone: ${r.flood ? r.flood.zone : 'unknown'} | Utility: Duke Energy (verify)`,
+      `Existing solar permit: ${r.permits && r.permits.some((x) => x.tag === 'solar') ? 'YES - see permits' : 'none found'}`,
+      '', `Usage: ${num(v.use)} kWh/month (${num(c.yearUse)} kWh/yr) | Panel: ${v.watts} W | Roof faces: ${v.face}`,
+      `Estimated max panels: ${c.maxPanels} | Yield used: ${Math.round(c.yieldKw)} kWh/kW/yr`, '', 'System options:'];
+    c.rows.forEach((x) => L.push(`- ${x.label}: ${x.n} panels, ${x.kw.toFixed(2)} kW DC, ~${num(x.kwh)} kWh/yr, ${x.off}% of usage`));
+    if (r.permits && r.permits.length) { L.push('', 'Recent permits:'); r.permits.slice(0, 8).forEach((x) => L.push(`- ${x.date} ${x.type}: ${x.work.slice(0, 90)}`)); }
+    L.push('', 'Estimates from public records; verify on site.');
+    return L.join(String.fromCharCode(10));
+  }
+  function mountSolar(box, r, open) {
+    if (!box) return;
+    const v = solarInputs(r);
+    const f = (k, label, step) => `<label><span>${label}</span><input data-k="${k}" type="number" step="${step}" value="${v[k]}"></label>`;
+    box.innerHTML = `<div class="hs-form">${f('use', 'Usage kWh / month', 50)}${f('heated', 'Heated ft²', 50)}${f('stories', 'Stories', 1)}${f('watts', 'Panel watts', 5)}${f('usable', 'Usable roof %', 5)}
+      <label><span>Roof faces</span><select data-k="face">${Object.keys(FACE).map((k) => `<option${k === v.face ? ' selected' : ''}>${k}</option>`).join('')}</select></label></div>
+      <div class="hs-out"></div><div class="row"><button class="btn ghost" data-copy>Copy for OpenSolar / engineer</button><button class="btn ghost" data-os>Open OpenSolar</button><span class="note" data-msg></span></div>`;
+    const draw = () => {
+      box.querySelectorAll('[data-k]').forEach((i) => { v[i.dataset.k] = i.tagName === 'SELECT' ? i.value : (parseFloat(i.value) || 0); });
+      box.querySelector('.hs-out').innerHTML = solarHtml(v, solarCalc(v));
+    };
+    box.querySelectorAll('[data-k]').forEach((i) => i.addEventListener('input', draw)); draw();
+    box.querySelector('[data-copy]').onclick = async () => {
+      const t = proposalText(r, v, solarCalc(v));
+      try { await navigator.clipboard.writeText(t); box.querySelector('[data-msg]').textContent = 'Copied. Paste into OpenSolar notes or an email to the engineer.'; } catch { box.querySelector('[data-msg]').textContent = 'Copy blocked on this device.'; }
+      try { if (window.OpalLog) window.OpalLog.add('Proposal data', r.p.siteadd); } catch {}
+    };
+    box.querySelector('[data-os]').onclick = () => (open || ((u) => window.open(u, '_blank')))('https://app.opensolar.com/');
+  }
+
   function houseBrief(r) {
     const p = r.p;
     const lines = [
@@ -240,7 +305,7 @@
     el.innerHTML = `<div class="row"><input id="houseAddr" list="houseSug" autocomplete="off" placeholder="Start typing an address…" style="flex:1 1 280px"><datalist id="houseSug"></datalist>
       <button class="primary btn" id="houseGo">Look up</button><button class="btn ghost" id="houseClear">Clear</button></div><div id="houseOut"></div>`;
     const out = el.querySelector('#houseOut'), input = el.querySelector('#houseAddr');
-    const show = (r) => { out.innerHTML = html(r) + aiButtons('houseAI'); wireAI(out.querySelector('#houseAI'), () => houseBrief(r), opts.open); out.querySelectorAll('[data-ext]').forEach((a) => a.addEventListener('click', (e) => { if (opts.open) { e.preventDefault(); opts.open(a.href); } })); };
+    const show = (r) => { out.innerHTML = html(r) + aiButtons('houseAI'); try { mountSolar(out.querySelector('#houseSolar'), r, opts.open); } catch (e) { console.error(e); } wireAI(out.querySelector('#houseAI'), () => houseBrief(r), opts.open); out.querySelectorAll('[data-ext]').forEach((a) => a.addEventListener('click', (e) => { if (opts.open) { e.preventDefault(); opts.open(a.href); } })); };
     const last = load();
     if (last) { input.value = last.address; show(last); }
     const go = async () => {
